@@ -46,6 +46,19 @@ def get_browsing_option():
         else:
             print("Invalid choice. Please try again.")
 
+def get_microphone_option():
+    while True:
+        print("Do you want to use a microphone?")
+        print("1: Yes")
+        print("2: No")
+        choice = input("Enter the number of your choice: ").strip()
+        if choice == '1':
+            return True
+        elif choice == '2':
+            return False
+        else:
+            print("Invalid choice. Please try again.")
+
 # Example usage
 llm_folder_path = "models/llm"  # Replace with your LLM folder path
 selected_llm_file = main(llm_folder_path, '.gguf')
@@ -75,6 +88,9 @@ if selected_llm_file:
     else:
         selected_story_file_path = "models/stories/Cognibrain.json"
 
+    # Get microphone option
+    use_microphone = get_microphone_option()
+
     # Kobold config
     command = [
         "koboldcpp.exe",
@@ -90,7 +106,7 @@ if selected_llm_file:
         "--highpriority",
         "--usecublas",
         "--contextsize",
-        "1228"
+        "12288"
     ]
 
     if browser_path:
@@ -102,6 +118,10 @@ if selected_llm_file:
         command.insert(4, selected_image_file_path)
         command.insert(5, "--mmproj")
         command.insert(6, "models/image/llava/mmproj-model-f16.gguf")
+
+    # Add the whisper model parameter if microphone is used
+    if use_microphone:
+        command.extend(["--whispermodel", r"models\audio\ggml-large-v3.bin"])
 
     # Execute the command
     try:
