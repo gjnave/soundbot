@@ -18,7 +18,7 @@ loader_choice = choose_loader()
 
 if loader_choice == "Classic":
     try:
-        subprocess.run(["E:\\staging\\testing\\SOUND-BOT\\koboldcpp.exe"], check=True)
+        subprocess.run(["koboldcpp.exe"], check=True)
         print("Classic Loader executed successfully.")
     except subprocess.CalledProcessError as e:
         print(f"Error executing Classic Loader: {e}")
