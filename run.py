@@ -1,6 +1,29 @@
 import subprocess
 import os
 
+def choose_loader():
+    while True:
+        print("Choose a loader:")
+        print("1: Classic Loader")
+        print("2: SOUND Loader")
+        choice = input("Enter the number of your choice: ").strip()
+        if choice == '1':
+            return "Classic"
+        elif choice == '2':
+            return "SOUND"
+        else:
+            print("Invalid choice. Please try again.")
+
+loader_choice = choose_loader()
+
+if loader_choice == "Classic":
+    try:
+        subprocess.run(["E:\\staging\\testing\\SOUND-BOT\\koboldcpp.exe"], check=True)
+        print("Classic Loader executed successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"Error executing Classic Loader: {e}")
+    exit()
+
 url2 = "http://localhost:5001"
 private_browser_path = r"venv\Scripts\midori\private_browsing.exe"
 default_browser_path = ""
