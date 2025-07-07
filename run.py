@@ -1,161 +1,127 @@
+
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
 import subprocess
 import os
 
-def choose_loader():
-    while True:
-        print("Choose a loader:")
-        print("1: Classic Loader")
-        print("2: SOUND Loader")
-        choice = input("Enter the number of your choice: ").strip()
-        if choice == '1':
-            return "Classic"
-        elif choice == '2':
-            return "SOUND"
-        else:
-            print("Invalid choice. Please try again.")
+class AppLauncher(tk.Tk):
+    def __init__(self):
+        super().__init__()
 
-loader_choice = choose_loader()
+        self.title("SOUNDBot Launcher")
+        self.geometry("600x600")
+        self.configure(bg="#F0F0F0")
 
-if loader_choice == "Classic":
-    try:
-        subprocess.run(["koboldcpp.exe"], check=True)
-        print("Classic Loader executed successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"Error executing Classic Loader: {e}")
-    exit()
+        # Determine the base directory of the main SOUND-BOT application
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.soundbot_base_dir = script_dir
 
-url2 = "http://localhost:5001"
-private_browser_path = r"venv\Scripts\midori\private_browsing.exe"
-default_browser_path = ""
+        print(f"DEBUG: Current Working Directory: {os.getcwd()}")
+        print(f"DEBUG: Script Directory: {script_dir}")
+        print(f"DEBUG: Calculated SOUND-BOT Base Directory: {self.soundbot_base_dir}")
 
-def list_files(folder, extension):
-    return [f for f in os.listdir(folder) if f.endswith(extension)]
+        # --- Styles ---
+        style = ttk.Style(self)
+        style.configure("TLabel", background="#F0F0F0", font=("Helvetica", 10))
+        style.configure("TButton", font=("Helvetica", 10, "bold"))
+        style.configure("TFrame", background="#F0F0F0")
 
-def choose_file(files, blank_option=False):
-    if not files:
-        print("No files found.")
-        return None
-    if len(files) == 1 and not blank_option:
-        return files[0]
-    print("\nChoose a file:\n")
-    for idx, file in enumerate(files, start=1):
-        print(f"{idx}: {file}")
-    if blank_option:
-        print(f"{len(files) + 1}: Blank Slate")
-    while True:
-        choice = input("Enter the number of the file you want to choose: ")
-        if choice.isdigit() and 1 <= int(choice) <= len(files):
-            return files[int(choice) - 1]
-        elif blank_option and choice == str(len(files) + 1):
-            return "Blank Slate"
-        else:
-            print("Invalid choice. Please try again.")
+        # --- Main Frame ---
+        main_frame = ttk.Frame(self, padding="20")
+        main_frame.pack(expand=True, fill="both")
 
-def main(folder, extension, blank_option=False):
-    files = list_files(folder, extension)
-    chosen_file = choose_file(files, blank_option)
-    if chosen_file and chosen_file != "Blank Slate":
-        print(f"You chose: {chosen_file}\n")
-    else:
-        print("No file chosen or Blank Slate selected.")
-    return chosen_file
+        # --- Model Selection ---
+        self.llm_model = self.create_file_selector(main_frame, "LLM Model (.gguf)", os.path.join(self.soundbot_base_dir, "models/llm"), ".gguf")
+        self.image_model = self.create_file_selector(main_frame, "Image Model (.safetensors)", os.path.join(self.soundbot_base_dir, "models/image"), ".safetensors")
+        self.story_file = self.create_file_selector(main_frame, "Story File (.json)", os.path.join(self.soundbot_base_dir, "models/stories"), ".json", blank_option=True)
 
-def get_browsing_option():
-    while True:
-        print("Choose browsing option:")
-        print("1: SOUND (Private) w/ No Memory")
-        print("2: Default Browsing (Ability to Save)")
-        choice = input("Enter the number of your choice: ").strip()
-        if choice == '1':
-            return private_browser_path
-        elif choice == '2':
-            return default_browser_path
-        else:
-            print("Invalid choice. Please try again.")
+        # --- Options ---
+        self.use_microphone = tk.BooleanVar()
+        mic_check = ttk.Checkbutton(main_frame, text="Use Microphone", variable=self.use_microphone)
+        mic_check.pack(pady=10, anchor="w")
 
-def get_microphone_option():
-    while True:
-        print("Do you want to use a microphone?")
-        print("1: Yes")
-        print("2: No")
-        choice = input("Enter the number of your choice: ").strip()
-        if choice == '1':
-            return True
-        elif choice == '2':
-            return False
-        else:
-            print("Invalid choice. Please try again.")
+        self.browsing_option = tk.StringVar(value="private")
+        private_radio = ttk.Radiobutton(main_frame, text="SOUND (Private) w/ No Memory", variable=self.browsing_option, value="private")
+        default_radio = ttk.Radiobutton(main_frame, text="Default Browsing (Ability to Save)", variable=self.browsing_option, value="default")
+        private_radio.pack(anchor="w")
+        default_radio.pack(anchor="w")
 
-# Example usage
-llm_folder_path = "models/llm"  # Replace with your LLM folder path
-selected_llm_file = main(llm_folder_path, '.gguf')
+        # --- Launch Button ---
+        launch_button = ttk.Button(main_frame, text="Launch SOUNDBot", command=self.launch_soundbot)
+        launch_button.pack(pady=20, ipady=10, fill="x")
 
-if selected_llm_file:
-    selected_llm_file_path = os.path.join(llm_folder_path, selected_llm_file)
-    load_image_model = input("Do you want to load an image model as well? (y/n): ").strip().lower()
-    if load_image_model == 'y':
-        image_folder_path = "models/image"  # Replace with your image folder path
-        selected_image_file = main(image_folder_path, '.safetensors')
-        if selected_image_file:
-            selected_image_file_path = os.path.join(image_folder_path, selected_image_file)
-        else:
-            selected_image_file_path = None
-    else:
-        selected_image_file_path = None
+    def create_file_selector(self, parent, label_text, folder_path, extension, blank_option=False):
+        frame = ttk.Frame(parent)
+        frame.pack(fill="x", pady=5)
 
-    # Get browsing option
-    browser_path = get_browsing_option()
+        label = ttk.Label(frame, text=label_text)
+        label.pack(side="left", padx=(0, 10))
 
-    # Choose a story to preload with Blank Slate option
-    story_folder_path = "models/stories"  # Replace with your stories folder path
-    selected_story_file = main(story_folder_path, '.json', blank_option=True)
+        variable = tk.StringVar()
+        combobox = ttk.Combobox(frame, textvariable=variable)
+        
+        normalized_folder_path = os.path.normpath(folder_path)
+        files = [f for f in os.listdir(normalized_folder_path) if f.endswith(extension)] if os.path.exists(normalized_folder_path) else []
+        if blank_option:
+            files.insert(0, "Blank Slate")
+        combobox['values'] = files
+        if files:
+            combobox.current(0)
 
-    if selected_story_file and selected_story_file != "Blank Slate":
-        selected_story_file_path = os.path.join(story_folder_path, selected_story_file)
-    else:
-        selected_story_file_path = None
+        combobox.pack(side="left", expand=True, fill="x")
+        return variable
 
-    # Get microphone option
-    use_microphone = get_microphone_option()
+    def launch_soundbot(self):
+        # Get the base directory of the main SOUND-BOT application
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        soundbot_base_dir = os.path.abspath(os.path.join(script_dir, os.pardir, "SOUND-BOT"))
 
-    # Kobold config
-    command = [
-        "koboldcpp.exe",
-        "--model",
-        selected_llm_file_path,
-        "--sdquant",
-        "--gpulayers",
-        "99",
-        "--smartcontext",
-        "--quiet",
-        "--highpriority",
-        "--usecublas",
-        "--contextsize",
-        "12288"
-    ]
+        llm_model_path = os.path.normpath(os.path.join(self.soundbot_base_dir, "models/llm", self.llm_model.get())) if self.llm_model.get() else None
+        print(f"DEBUG: soundbot_base_dir: {self.soundbot_base_dir}")
+        print(f"DEBUG: llm_model_path: {llm_model_path}")
+        print(f"DEBUG: os.path.exists(llm_model_path): {os.path.exists(llm_model_path)}")
+        if not llm_model_path or not os.path.exists(llm_model_path):
+            messagebox.showerror("Error", "Please select a valid LLM model.")
+            return
 
-    if selected_story_file_path:
-        command.extend(["--preloadstory", selected_story_file_path])
+        koboldcpp_path = os.path.normpath(os.path.join(self.soundbot_base_dir, "koboldcpp.exe"))
+        print(f"DEBUG: koboldcpp_path: {koboldcpp_path}")
 
-    if browser_path:
-        command.extend(["--onready", f"{browser_path} {url2}"])
+        command = [
+            koboldcpp_path,
+            "--model", llm_model_path,
+            "--sdquant",
+            "--gpulayers", "99",
+            "--smartcontext",
+            "--quiet",
+            "--highpriority",
+            "--usecublas",
+            "--contextsize", "12288"
+        ]
 
-    # Add the image model parameter if selected
-    if selected_image_file_path:
-        command.insert(3, "--sdmodel")
-        command.insert(4, selected_image_file_path)
-        command.insert(5, "--mmproj")
-        command.insert(6, "models/image/llava/mmproj-model-f16.gguf")
+        if self.image_model.get():
+            image_model_path = os.path.normpath(os.path.join(self.soundbot_base_dir, "models/image", self.image_model.get()))
+            if os.path.exists(image_model_path):
+                command.extend(["--sdmodel", image_model_path, "--mmproj", os.path.normpath(os.path.join(self.soundbot_base_dir, "models/image/llava/mmproj-model-f16.gguf"))])
 
-    # Add the whisper model parameter if microphone is used
-    if use_microphone:
-        command.extend(["--whispermodel", r"models\audio\ggml-large-v3.bin"])
+        if self.story_file.get() and self.story_file.get() != "Blank Slate":
+            story_file_path = os.path.normpath(os.path.join(self.soundbot_base_dir, "models/stories", self.story_file.get()))
+            if os.path.exists(story_file_path):
+                command.extend(["--preloadstory", story_file_path])
 
-    # Execute the command
-    try:
-        subprocess.run(command, check=True)
-        print("Command executed successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"Error executing command: {e}")
-else:
-    print("No LLM model selected, command not executed.")
+        if self.use_microphone.get():
+            command.extend(["--whispermodel", os.path.normpath(os.path.join(self.soundbot_base_dir, r"models\audio\ggml-large-v3.bin"))])
+
+        if self.browsing_option.get() == "private":
+            browser_path = os.path.normpath(os.path.join(self.soundbot_base_dir, r"venv\Scripts\midori\private_browsing.exe"))
+            command.extend(["--onready", f'{browser_path} http://localhost:5001'])
+
+        try:
+            subprocess.Popen(command)
+            self.destroy()
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to launch SOUNDBot: {e}")
+
+if __name__ == "__main__":
+    app = AppLauncher()
+    app.mainloop()
